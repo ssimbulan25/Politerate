@@ -145,7 +145,8 @@ export function Layout() {
       <TermTooltip />
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 mt-16 text-base text-muted-foreground">
+      {/* Hidden while Today's Brief fills the screen (globals.css). */}
+      <footer className="site-footer border-t border-border py-8 mt-16 text-base text-muted-foreground">
         <div className={`${width} mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4`}>
           <div className="flex items-center gap-2">
             <BrandIcon size={20} />

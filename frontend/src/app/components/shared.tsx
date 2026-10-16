@@ -584,14 +584,15 @@ export const DEFAULT_WIDTH = "max-w-6xl";
 // Near full-bleed, for dense grids like All Articles.
 export const WIDE_WIDTH = "max-w-[120rem]";
 
-export function PageContainer({ children, narrow = false, wide = false }: {
+export function PageContainer({ children, narrow = false, wide = false, className = "" }: {
   children: React.ReactNode;
   narrow?: boolean;
   wide?: boolean;
+  className?: string;
 }) {
   const maxWidth = narrow ? "max-w-4xl" : wide ? WIDE_WIDTH : DEFAULT_WIDTH;
   return (
-    <div className={`mx-auto px-4 sm:px-6 py-8 ${maxWidth}`}>
+    <div className={`mx-auto px-4 sm:px-6 py-8 ${maxWidth} ${className}`}>
       {children}
     </div>
   );

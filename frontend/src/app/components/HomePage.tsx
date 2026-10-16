@@ -1,10 +1,76 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { RefreshCw, AlertCircle, Map as MapIcon } from "lucide-react";
-import { Spinner, StateBox, AiBanner, PageContainer, formatRelativeDate, SITE_TIME_ZONE } from "./shared";
-import { DailyBrief, DailySummary, StatPill } from "./DailyBrief";
+import {
+  Spinner, StateBox, AiBanner, PageContainer, SectionLabel, SourceBadge, formatRelativeDate, SITE_TIME_ZONE,
+} from "./shared";
+import { DailyBrief, DailySummary, StatPill, canFitScreen } from "./DailyBrief";
 import { errorMessage, fetchJson } from "../api";
 import { TAG_ORDER, TOPIC_TAGS, TagSwatch } from "./topicTags";
+
+/** The brief's outlets, one link each, opening from their count. Built in
+ *  rather than the ui/ popover, whose positioning library added 15% to the
+ *  site's download for this one list. */
+function SourcesButton({ count, links }: { count: number; links: DailySummary["source_links"] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      const outside = e instanceof MouseEvent && !ref.current?.contains(e.target as Node);
+      if (outside || (e instanceof KeyboardEvent && e.key === "Escape")) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls="brief-sources"
+        aria-label={`${open ? "Hide" : "Show"} the ${count} sources in today's brief`}
+        className="rounded hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <StatPill value={count} label="sources" />
+      </button>
+      {open && (
+        <div
+          id="brief-sources"
+          className="absolute right-0 top-full mt-2 z-50 w-80 space-y-2 rounded-md border border-border bg-popover text-popover-foreground p-4 shadow-md"
+        >
+          <SectionLabel>Sources in today's brief</SectionLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {links.map((s, i) => (
+              <SourceBadge key={i} source={s.source} url={s.url} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** What each tile color means. */
+function TagLegend({ className }: { className: string }) {
+  return (
+    <div className={`text-sm text-muted-foreground ${className}`}>
+      {TAG_ORDER.map(t => (
+        <span key={t} className="inline-flex items-center gap-2">
+          <TagSwatch tag={t} />
+          {TOPIC_TAGS[t].label}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function todayHeading(): string {
   return new Date().toLocaleDateString("en-US", {
@@ -32,13 +98,16 @@ export function HomePage() {
   useEffect(() => { load(); }, []);
 
   const isEmpty = !loading && !error && !daily?.sections?.length;
+  // The brief fills the window on big enough screens (globals.css) unless
+  // it holds more topics than a screen-filling layout exists for.
+  const fits = !daily || canFitScreen(daily.sections?.length ?? 0) || isEmpty;
 
   return (
-    <div>
+    <div className={fits ? "fit-screen" : ""}>
       <AiBanner />
-      <PageContainer>
+      <PageContainer className="fit-screen-body">
         {/* Header */}
-        <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3 pb-5 mb-5 border-b border-border">
+        <header className="home-header flex flex-wrap items-end justify-between gap-x-8 gap-y-3 pb-5 mb-5 border-b border-border">
           <div>
             <p
               className="text-sm tracking-[0.2em] uppercase text-muted-foreground"
@@ -51,14 +120,15 @@ export function HomePage() {
               style={{
                 fontFamily: "var(--font-display)",
                 fontWeight: 800,
-                fontSize: "clamp(2.2rem, 5vw, 3.2rem)",
+                // Smaller while the brief fills the screen (globals.css).
+                fontSize: "var(--home-title-size, clamp(2.2rem, 5vw, 3.2rem))",
                 lineHeight: 1.05,
                 letterSpacing: "-0.01em",
               }}
             >
               Today's Brief
             </h1>
-            <p className="mt-2 max-w-2xl text-lg text-muted-foreground leading-relaxed">
+            <p className="home-intro mt-2 max-w-2xl text-lg text-muted-foreground leading-relaxed">
               The day's most-covered stories, summarized across outlets. Hover a highlighted term
               for its definition; open a story for every outlet's account.
             </p>
@@ -68,13 +138,21 @@ export function HomePage() {
               <div className="flex flex-wrap gap-2">
                 <StatPill value={daily.cluster_count} label="topics" />
                 <StatPill value={daily.total_articles} label="articles" />
-                <StatPill value={daily.source_count} label="sources" />
+                <SourcesButton count={daily.source_count} links={daily.source_links ?? []} />
               </div>
-              {daily.last_updated && (
-                <span className="text-sm text-muted-foreground" style={{ fontFamily: "var(--font-data)" }}>
-                  Updated {formatRelativeDate(daily.last_updated)}
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                {daily.last_updated && (
+                  <span style={{ fontFamily: "var(--font-data)" }}>
+                    Updated {formatRelativeDate(daily.last_updated)}
+                  </span>
+                )}
+                {/* Below the brief when it scrolls; here when it fills the screen. */}
+                <Link to="/topics" className="fit-screen-only items-center gap-1.5 font-semibold text-brand-accent link">
+                  <MapIcon size={15} /> Every topic, mapped
+                </Link>
+              </div>
+              {/* Above the brief when it scrolls; here when it fills the screen, to give the tiles its row. */}
+              <TagLegend className="home-key fit-screen-only flex-wrap justify-end gap-x-4 gap-y-1" />
             </div>
           )}
         </header>
@@ -122,20 +200,14 @@ export function HomePage() {
         {!loading && !error && daily && !isEmpty && (
           <>
             {/* Tag key */}
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-5 text-sm text-muted-foreground">
-              {TAG_ORDER.map(t => (
-                <span key={t} className="inline-flex items-center gap-2">
-                  <TagSwatch tag={t} />
-                  {TOPIC_TAGS[t].label}
-                </span>
-              ))}
-            </div>
+            <TagLegend className="fit-screen-hide flex flex-wrap items-center gap-x-5 gap-y-2 mb-5" />
 
-            <DailyBrief data={daily} />
+            {/* Sources are listed from the header's "sources" count. */}
+            <DailyBrief data={daily} fit showSources={false} />
 
             <Link
               to="/topics"
-              className="group mt-10 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card px-6 py-5 hover:border-border-strong transition-colors"
+              className="fit-screen-hide group mt-10 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card px-6 py-5 hover:border-border-strong transition-colors"
             >
               {/* Phones get the topic list (TopicsPage), not the map. */}
               <span>

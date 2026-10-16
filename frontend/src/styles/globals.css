@@ -139,6 +139,129 @@ mark {
     transform: none;
   }
 }
+/* Daily Brief filling the screen (Today's Brief: HomePage, DailyBrief
+   `fit`). On windows big enough to show every tile at a readable size, the
+   page is exactly the window's height below the top bar, without the
+   footer, and the tiles share that height on FIT_LAYOUTS' grid. Smaller
+   windows keep the flowing layout above, which scrolls. */
+.fit-screen-only {
+  display: none;
+}
+@media (min-width: 1024px) and (min-height: 640px) {
+  .fit-screen {
+    /* The top bar is h-16. */
+    height: calc(100dvh - 4rem);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    --home-title-size: clamp(1.75rem, 2.4vw, 2.25rem);
+  }
+  body:has(.fit-screen) .site-footer,
+  .fit-screen .fit-screen-hide {
+    display: none;
+  }
+  .fit-screen .fit-screen-only {
+    display: inline-flex;
+  }
+  .fit-screen-body {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  /* One row: the stats and tag key beside the title, not under it. */
+  .fit-screen .home-header {
+    flex-wrap: nowrap;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  /* Narrower, so the color key beside it fits on one line. */
+  .fit-screen .home-intro {
+    margin-top: 0.25rem;
+    max-width: 36rem;
+    font-size: 1rem;
+  }
+  .bento-fit-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .bento.bento-fit {
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--fit-rows), minmax(0, 1fr));
+  }
+  .bento-fit > .bento-tile {
+    grid-column: var(--fx) / span var(--fw);
+    grid-row: var(--fy) / span var(--fh);
+    container: tile / size;
+  }
+  /* Room for a two-line headline in the shortest tiles, and for the lead
+     story's points. */
+  .bento-fit > .bento-tile {
+    padding: 0.75rem 0.875rem;
+    gap: 0.375rem;
+  }
+  .bento-fit > .bento-tile.tile-hero {
+    padding: 1rem 1.125rem;
+  }
+  .bento-fit .tile-headline {
+    flex-shrink: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--headline-lines);
+    overflow: hidden;
+  }
+  /* Points form a column that wraps, so a point that wouldn't fit whole
+     moves to a second column, clipped out of sight, rather than showing
+     cut off. The empty first item lets even the first point move. */
+  .bento-fit .tile-points {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    row-gap: 0.375rem;
+    overflow: hidden;
+  }
+  .bento-fit .tile-points::before {
+    content: "";
+    width: 100%;
+    height: 0;
+    margin-bottom: -0.375rem;
+  }
+  .bento-fit .tile-points > li {
+    width: 100%;
+    margin: 0;
+  }
+}
+/* Short tiles get shorter headlines, so they never run past the tile.
+   Heights are inside the tile's padding. */
+@container tile (max-height: 7.5rem) {
+  .bento-fit .tile-headline {
+    -webkit-line-clamp: 2;
+  }
+}
+@container tile (max-height: 4.25rem) {
+  .bento-fit .tile-headline {
+    -webkit-line-clamp: 1;
+  }
+}
+/* Short windows (a 1366x768 laptop): the intro and the color key go, so
+   ten topics still get two-line headlines. Each tile names its tags. */
+@media (min-width: 1024px) and (min-height: 640px) and (max-height: 760px) {
+  .fit-screen .home-intro,
+  .fit-screen .home-key {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bento-tile,
   .bento-tile .tile-cta {

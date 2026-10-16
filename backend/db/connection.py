@@ -5,11 +5,12 @@ SQLite connection + init. Schema lives in `schema.sql` (Sarah's convention).
 Mirrors her `backend/db/connection.py` pattern.
 """
 
+import json
 import logging
 import sqlite3
 from pathlib import Path
 
-from backend.config import DB_PATH
+from backend.config import DB_PATH, site_now
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ def init_db() -> None:
     _apply_column_migrations(cursor)
     _backfill_regions(cursor)
     _backfill_authors(cursor)
+    _clean_stored_titles(cursor)
 
     cursor.executescript(_ARTICLE_INDEXES_SQL)
 
@@ -120,6 +122,57 @@ def _backfill_authors(cursor) -> None:
     if updates:
         cursor.executemany("UPDATE articles SET author = ? WHERE url = ?", updates)
         logger.info(f"Added bylines to {len(updates)} articles stored before bylines were kept")
+
+
+def _clean_stored_titles(cursor) -> None:
+    """Once: cut the outlet name ("... | Fox News", "... - UPI.com") from
+    titles stored before the preprocessor did (clean_title), in articles,
+    today's topics and the Archive's snapshots. A topic doesn't record which
+    outlet each of its titles came from, so a suffix naming any of its
+    outlets is cut. Recorded in metadata, so later startups skip it."""
+    if cursor.execute("SELECT 1 FROM metadata WHERE key = 'titles_cleaned'").fetchone():
+        return
+    from backend.pipeline.preprocessor import clean_title
+
+    def clean_topic(topic: dict) -> bool:
+        titles = topic.get("titles") or []
+        cleaned = [clean_title(t, topic.get("sources") or []) if t else t for t in titles]
+        topic["titles"] = cleaned
+        return cleaned != titles
+
+    articles = []
+    for url, title, source in cursor.execute("SELECT url, title, source FROM articles WHERE title IS NOT NULL").fetchall():
+        cleaned = clean_title(title, source)
+        if cleaned != title:
+            articles.append((cleaned, url))
+    cursor.executemany("UPDATE articles SET title = ? WHERE url = ?", articles)
+
+    topics = 0
+    for cluster_id, titles, sources in cursor.execute("SELECT id, titles, sources FROM clusters").fetchall():
+        topic = {"titles": json.loads(titles or "[]"), "sources": json.loads(sources or "[]")}
+        if clean_topic(topic):
+            cursor.execute("UPDATE clusters SET titles = ? WHERE id = ?", (json.dumps(topic["titles"]), cluster_id))
+            topics += 1
+
+    days = 0
+    for date, payload in cursor.execute("SELECT snapshot_date, snapshot_json FROM daily_snapshots").fetchall():
+        try:
+            snapshot = json.loads(payload)
+        except (TypeError, ValueError):
+            continue
+        # Every topic is cleaned, not just up to the first one that changes.
+        if any([clean_topic(c) for c in snapshot.get("clusters") or []]):
+            cursor.execute(
+                "UPDATE daily_snapshots SET snapshot_json = ? WHERE snapshot_date = ?", (json.dumps(snapshot), date),
+            )
+            days += 1
+
+    cursor.execute(
+        "INSERT OR REPLACE INTO metadata (key, value) VALUES ('titles_cleaned', ?)", (site_now().isoformat(),),
+    )
+    logger.info(
+        f"Cut outlet names from stored titles: {len(articles)} articles, {topics} topics, {days} archived days"
+    )
 
 
 def _apply_column_migrations(cursor) -> None:

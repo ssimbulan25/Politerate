@@ -71,6 +71,10 @@ _BIO = re.compile(r"^(.+?)\s+is\s+an?\s+", re.IGNORECASE)
 _BYLINE_SEPARATORS = re.compile(r"\s*,\s*|\s+and\s+|\s*&\s*|\s*\|\s*", re.IGNORECASE)
 # A wire service credited after the reporter: "BECKY BOHRER Associated Press".
 _TRAILING_AGENCY = re.compile(r"^(.+?)\s+((?:The\s+)?Associated Press|Reuters|AFP)$", re.IGNORECASE)
+# The last " | part" / " - part" of a title (pipe, hyphen, en or em dash),
+# which some outlets' page titles use for their own name.
+_TITLE_SUFFIX = re.compile(r"\s+[|\-–—]\s+([^|\-–—]+?)\s*$")
+_DOMAIN_ENDING = re.compile(r"\.(com|org|net|co\.uk)$", re.IGNORECASE)
 # Outlets' long names, by the short label they go by here, for spotting an
 # outlet crediting itself ("The Christian Science Monitor" on CS Monitor).
 _OUTLET_LONG_NAMES = {
@@ -137,6 +141,21 @@ def _is_outlet(name: str, source: str) -> bool:
     Jazeera Staff"): the site shows the outlet next to the byline anyway."""
     key, outlet = _outlet_key(name), _outlet_key(source or "")
     return bool(key) and key in (outlet, _OUTLET_LONG_NAMES.get(outlet))
+
+
+def clean_title(title: str, sources) -> str:
+    """`title` without the outlet name some page titles end with ("... |
+    Fox News", "... - UPI.com"). `sources` is the article's outlet, or a
+    list of possible ones. Only a suffix naming one of them is cut, so a
+    headline that just contains a dash is left whole."""
+    match = _TITLE_SUFFIX.search(title or "")
+    if not match:
+        return title
+    name = _DOMAIN_ENDING.sub("", match.group(1))
+    outlets = [sources] if isinstance(sources, str) else list(sources or [])
+    if any(_is_outlet(name, outlet) for outlet in outlets):
+        return title[:match.start()].rstrip()
+    return title
 
 
 def _proper_case(name: str) -> str:
@@ -260,7 +279,7 @@ def preprocess_single(article: dict) -> dict | None:
         logger.error(f"{url}: clean_text failed - {type(e).__name__}: {str(e)[:50]}")
         return None
 
-    raw_title = article.get("title", "")
+    raw_title = clean_title(article.get("title", ""), article.get("source", ""))
     if not raw_title:
         logger.warning(f"{url}: missing title, using 'Untitled'")
         raw_title = "Untitled"
