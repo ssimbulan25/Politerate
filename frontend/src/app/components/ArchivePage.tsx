@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router";
 import { AlertCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { Calendar } from "./ui/calendar";
 import {
-  Spinner, StateBox, SourceBadge, AiBanner, SectionLabel, getTopicIcon, Region,
+  Spinner, StateBox, SourceBadge, AiBanner, SectionLabel, getTopicIcon, Region, PAGE_WIDTH,
 } from "./shared";
 import { DailyBrief, DailySummary } from "./DailyBrief";
 import { GenreWeights, TopicTags, topicTags } from "./topicTags";
@@ -333,7 +333,7 @@ export function ArchivePage() {
   return (
     <div>
       <AiBanner />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className={`${PAGE_WIDTH} mx-auto px-4 sm:px-6 py-8`}>
         {/* Page header */}
         <div className="mb-8 pb-6 border-b border-border">
           <h1

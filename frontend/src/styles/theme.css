@@ -3,11 +3,12 @@
 :root {
   /* 1rem: what every rem-based size (text, spacing, widths) scales from. */
   --font-size: 16px;
-  /* Domine comes in weights 400-700 and has no italic: heavier weights
-     render at 700, and italics are slanted by the browser. */
-  --font-display: 'Domine', Georgia, serif;
-  --font-sans: 'Domine', Georgia, serif;
-  --font-data: 'Domine', Georgia, serif;
+  /* Headings in Manrope (weights 200-800), body text in EB Garamond
+     (400-800, with italics). Small data labels (counts, dates) are
+     interface text, so they take the headings' sans. */
+  --font-display: 'Manrope', system-ui, sans-serif;
+  --font-sans: 'EB Garamond', Georgia, serif;
+  --font-data: 'Manrope', system-ui, sans-serif;
 
   /* Light mode: neutral sepia. Dark mode (.dark, the default) is below. */
 

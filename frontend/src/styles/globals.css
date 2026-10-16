@@ -115,6 +115,12 @@ mark {
     box-shadow 220ms ease,
     border-color 220ms ease;
 }
+/* DailyBrief sets both sizes on the tile: --flow-headline by tile size where
+   the brief flows, --fit-headline (scaled to the tile) where it fills the
+   screen (below). */
+.bento-tile .tile-headline {
+  font-size: var(--flow-headline);
+}
 /* Bigger tiles grow less, so every tile grows by about the same amount. */
 .bento-tile:hover,
 .bento-tile:focus-visible {
@@ -195,6 +201,17 @@ mark {
     min-height: 0;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-template-rows: repeat(var(--fit-rows), minmax(0, 1fr));
+    /* Tiles' text grows with the brief (cqi: its width), so a bigger screen
+       shows the same ten topics bigger: 16px up to about 1600px wide, 18px
+       at 1920, where the page stops widening. Points and labels size from
+       this; headlines from their tile (DailyBrief FIT_TILE). */
+    font-size: clamp(1rem, 0.2rem + 0.8cqi, 1.4rem);
+  }
+  .bento-fit .tile-points {
+    font-size: inherit;
+  }
+  .bento-fit .bento-tile .tile-headline {
+    font-size: var(--fit-headline);
   }
   .bento-fit > .bento-tile {
     grid-column: var(--fx) / span var(--fw);
@@ -251,6 +268,29 @@ mark {
 @container tile (max-height: 4.25rem) {
   .bento-fit .tile-headline {
     -webkit-line-clamp: 1;
+  }
+}
+/* Narrow tiles (about a quarter of a 1024px screen) put the outlet count on
+   a line of its own under the tags; if the tile is short too, the headline
+   gives up a line for it. */
+@container tile (max-width: 17rem) and (max-height: 6.5rem) {
+  .bento-fit .tile-headline {
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* Which points Today's Brief shows (DailyBrief renders enough for both
+   layouts): where it scrolls, more for more relevant topics; where it
+   fills the screen, up to its tile's limit, as many as fit. */
+.point-beyond-flow {
+  display: none;
+}
+@media (min-width: 1024px) and (min-height: 640px) {
+  .bento-fit .point-beyond-flow {
+    display: flex;
+  }
+  .bento-fit .point-beyond-fit {
+    display: none;
   }
 }
 /* Short windows (a 1366x768 laptop): the intro and the color key go, so

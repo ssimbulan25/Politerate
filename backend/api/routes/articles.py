@@ -21,7 +21,7 @@ ALL_ARTICLES_PAST_DAYS = 7
 
 @articles_bp.route("/api/summaries")
 def get_summaries():
-    from backend.pipeline.summarizer import brief_relevance, select_brief_clusters
+    from backend.pipeline.summarizer import LOOKBACK_HOURS, brief_relevance, select_brief_clusters
 
     def build():
         data = get_cached_summaries()
@@ -31,6 +31,8 @@ def get_summaries():
             # Sizes the Topics page's circles the way the Daily Brief ranks topics.
             c["relevance"] = brief_relevance(c)
             c["in_brief"] = str(c.get("cluster_id")) in brief_ids
+        # The window each topic's outlet_count covers (earlier coverage included).
+        data["lookback_hours"] = LOOKBACK_HOURS
         return data
 
     return jsonify(response_cache.cached(("summaries",), build))

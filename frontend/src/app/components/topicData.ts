@@ -31,6 +31,8 @@ export interface TopicCluster {
 export interface SummariesData {
   last_updated?: string;
   clusters: TopicCluster[];
+  // Hours of earlier coverage each topic's outlet_count includes.
+  lookback_hours?: number;
 }
 
 export function topicTitle(t: TopicCluster): string {

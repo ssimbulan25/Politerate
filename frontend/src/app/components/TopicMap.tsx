@@ -15,8 +15,8 @@ const GRADIENT_MIN_SHARE = 0.08;
 // Titles inside circles, in screen pixels.
 // Sizes are where a title starts, once its circle first fits it; they grow
 // as you zoom in further (see layoutLabel).
-const labelFont = (px: number) => `600 ${px}px Domine, Georgia, serif`;
-const noteFont = (px: number) => `400 ${px}px Domine, Georgia, serif`;
+const labelFont = (px: number) => `600 ${px}px Manrope, system-ui, sans-serif`;
+const noteFont = (px: number) => `400 ${px}px Manrope, system-ui, sans-serif`;
 const LABEL_FONT_SIZE = 12;
 const LABEL_FONT = labelFont(LABEL_FONT_SIZE);
 const LABEL_LINE_HEIGHT = 14;
@@ -699,7 +699,7 @@ function MapGuides({
   const ring = layout.politicsRadius * k;
   // Tag colors pulled toward the text color, so yellow reads on sepia.
   const labelStyle = (tag: TagKey) => ({
-    font: "700 13px Domine, Georgia, serif",
+    font: "700 13px Manrope, system-ui, sans-serif",
     letterSpacing: "0.14em",
     fill: `color-mix(in srgb, ${TOPIC_TAGS[tag].color} 70%, var(--foreground))`,
     stroke: "var(--map-bg)",

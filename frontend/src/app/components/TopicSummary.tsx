@@ -1,4 +1,4 @@
-import { SectionLabel } from "./shared";
+import { READING_WIDTH, SectionLabel } from "./shared";
 import { safeUrl, sanitizeHtml } from "../sanitize";
 
 export interface TopicDetail {
@@ -61,7 +61,7 @@ export function TopicSummary({
   if (!detailed?.overview) {
     return (
       <div
-        className={`text-lg text-foreground leading-relaxed ${MARK_CLASSES}`}
+        className={`text-lg text-foreground leading-relaxed ${READING_WIDTH} ${MARK_CLASSES}`}
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(fallbackHtml) }}
       />
     );
@@ -74,14 +74,15 @@ export function TopicSummary({
         <RichText
           html={detailed.overview_html}
           text={detailed.overview}
-          className={`text-lg text-foreground leading-relaxed ${MARK_CLASSES}`}
+          className={`text-lg text-foreground leading-relaxed ${READING_WIDTH} ${MARK_CLASSES}`}
         />
       </div>
 
       {detailed.details.length > 0 && (
         <div>
           <SectionLabel>Key details by outlet</SectionLabel>
-          <ul className="space-y-4">
+          {/* Two columns on wide screens, so lines stay a readable length. */}
+          <ul className="grid grid-cols-1 xl:grid-cols-2 gap-x-12 gap-y-4">
             {detailed.details.map((d, i) => (
               <li key={i} className="flex gap-3">
                 <span

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { AlertCircle, List, Map as MapIcon, RefreshCw } from "lucide-react";
-import { AiBanner, SectionLabel, SourceBadge, Spinner, StateBox, formatRelativeDate } from "./shared";
+import { AiBanner, OutletCount, PAGE_WIDTH, SectionLabel, SourceBadge, Spinner, StateBox, formatRelativeDate } from "./shared";
 import { KeyTermChips } from "./TopicSummary";
 import { TopicMap } from "./TopicMap";
 import { errorMessage, fetchJson } from "../api";
@@ -54,7 +54,7 @@ function ViewToggle({ value, onChange }: { value: View; onChange: (v: View) => v
 
 // ─── List view ────────────────────────────────────────────────────────────────
 
-function TopicCard({ topic }: { topic: TopicCluster }) {
+function TopicCard({ topic, hours }: { topic: TopicCluster; hours?: number }) {
   const href = topicHref(topic.cluster_id);
   const outlets = listedOutlets(topic);
   return (
@@ -79,7 +79,8 @@ function TopicCard({ topic }: { topic: TopicCluster }) {
           {topicTitle(topic)}
         </Link>
         <p className="text-sm text-muted-foreground" style={{ fontFamily: "var(--font-data)" }}>
-          {outlets} outlet{outlets !== 1 ? "s" : ""} · {topic.article_count} article{topic.article_count !== 1 ? "s" : ""}
+          <OutletCount listed={outlets} recent={topic.outlet_count} hours={hours} />
+          {" · "}{topic.article_count} article{topic.article_count !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -119,7 +120,7 @@ function TopicCard({ topic }: { topic: TopicCluster }) {
   );
 }
 
-function TopicList({ topics }: { topics: TopicCluster[] }) {
+function TopicList({ topics, hours }: { topics: TopicCluster[]; hours?: number }) {
   const groups = useMemo(() => {
     const byTag = new Map<TagKey, TopicCluster[]>();
     for (const t of topics) {
@@ -163,7 +164,7 @@ function TopicList({ topics }: { topics: TopicCluster[] }) {
             </span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
-            {topics.map(t => <TopicCard key={t.cluster_id} topic={t} />)}
+            {topics.map(t => <TopicCard key={t.cluster_id} topic={t} hours={hours} />)}
           </div>
         </section>
       ))}
@@ -234,7 +235,7 @@ export function TopicsPage() {
   return (
     <div>
       <AiBanner />
-      <div className="max-w-[120rem] mx-auto px-4 sm:px-6 pt-6 pb-10">
+      <div className={`${PAGE_WIDTH} mx-auto px-4 sm:px-6 pt-6 pb-10`}>
         <header className="flex flex-wrap items-end justify-between gap-4 mb-5">
           <div>
             <h1
@@ -294,7 +295,7 @@ export function TopicsPage() {
               />
             </div>
           ) : (
-            <TopicList topics={topics} />
+            <TopicList topics={topics} hours={data?.lookback_hours} />
           )
         )}
       </div>

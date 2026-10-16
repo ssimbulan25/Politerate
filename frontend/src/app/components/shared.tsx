@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Earth, Landmark } from "lucide-react";
 import { safeUrl } from "../sanitize";
@@ -11,6 +11,10 @@ export interface Chunk {
   bias: string;
   subjective: boolean;
   techniques: Array<{ label: string; confidence: number }>;
+  // The model's probability for the chosen emotion, lean and subjective /
+  // objective call. Missing on analyses saved before they were recorded.
+  emotion_confidence?: number;
+  subjectivity_confidence?: number;
 }
 
 export interface CredibilityData {
@@ -302,24 +306,119 @@ export function chunkCategory(chunk: Chunk): string | null {
   return null;
 }
 
+/** Names for the highlight categories (chunkCategory), as the legend shows them. */
+const ANNOT_LABELS: Record<string, string> = {
+  persuasion: "Persuasion",
+  appeal: "Appeal",
+  exaggeration: "Exaggeration",
+  loaded: "Loaded",
+  emotion: "Emotional",
+};
+
 export function AnnotationLegend() {
-  const items = [
-    { hue: ANNOT_HUES.persuasion, label: "Persuasion" },
-    { hue: ANNOT_HUES.appeal, label: "Appeal" },
-    { hue: ANNOT_HUES.exaggeration, label: "Exaggeration" },
-    { hue: ANNOT_HUES.loaded, label: "Loaded" },
-    { hue: ANNOT_HUES.emotion, label: "Emotional" },
-  ];
   return (
     <div className="flex flex-wrap gap-3 mb-4">
-      {items.map(item => (
-        <span key={item.label} className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <span className="annot inline-block w-3.5 h-3.5 rounded-sm" style={hueStyle(item.hue)} />
-          {item.label}
+      {Object.entries(ANNOT_LABELS).map(([cat, label]) => (
+        <span key={cat} className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <span className="annot inline-block w-3.5 h-3.5 rounded-sm" style={hueStyle(ANNOT_HUES[cat])} />
+          {label}
         </span>
       ))}
-      <span className="text-sm text-muted-foreground">Hover for label</span>
+      <span className="text-sm text-muted-foreground">Hover or tap a highlight for its analysis</span>
     </div>
+  );
+}
+
+// ─── Per-sentence analysis card ───────────────────────────────────────────────
+
+function ConfidenceRow({ label, value, hue }: { label: string; value?: number; hue: string }) {
+  const pct = value == null ? null : Math.round(value * 100);
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_4rem_2.5rem] items-center gap-2 text-sm leading-snug">
+      <span className="text-foreground">{label}</span>
+      <span className="h-1.5 rounded-full bg-secondary overflow-hidden" aria-hidden="true">
+        {pct != null && <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: hue }} />}
+      </span>
+      <span className="text-right text-muted-foreground tabular-nums" style={{ fontFamily: "var(--font-data)" }}>
+        {pct != null ? `${pct}%` : "—"}
+      </span>
+    </div>
+  );
+}
+
+function CardSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Everything the analyzer said about one highlighted sentence, with the
+ * model's confidence in each: the persuasion techniques it flagged, then
+ * the sentence's emotion, political lean and subjective-or-objective call.
+ * Floats above the page (fixed, in a portal) so containers that clip their
+ * overflow don't cut it off, positioned like TermTooltip.
+ */
+function ChunkAnalysisCard({ id, chunk, anchor }: { id: string; chunk: Chunk; anchor: DOMRect }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const cat = chunkCategory(chunk) ?? "loaded";
+  const hue = ANNOT_HUES[cat] ?? ANNOT_HUES.loaded;
+  const techniques = [...(chunk.techniques ?? [])].sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
+  const unrecorded = [chunk.emotion_confidence, chunk.subjectivity_confidence].some(v => v == null);
+
+  // Above the highlighted line, or below it near the top of the window;
+  // kept on screen.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const left = Math.min(Math.max(anchor.left + anchor.width / 2 - width / 2, 12), window.innerWidth - width - 12);
+    const above = anchor.top - height - 10;
+    el.style.left = `${left}px`;
+    el.style.top = `${above >= 8 ? above : anchor.bottom + 10}px`;
+    el.style.visibility = "visible";
+  }, [anchor, chunk]);
+
+  return createPortal(
+    <div
+      ref={ref}
+      id={id}
+      role="tooltip"
+      className="fixed z-[100] w-80 max-w-[calc(100vw-24px)] space-y-3 rounded-lg border border-border bg-popover text-popover-foreground p-4 shadow-lg pointer-events-none"
+      style={{ left: 0, top: 0, visibility: "hidden" }}
+    >
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <span className="annot inline-block w-3.5 h-3.5 rounded-sm" style={hueStyle(hue)} />
+        {ANNOT_LABELS[cat]}
+      </div>
+
+      <CardSection title="Techniques">
+        {techniques.length > 0 ? (
+          techniques.map(t => <ConfidenceRow key={t.label} label={formatTechnique(t.label)} value={t.confidence} hue={hue} />)
+        ) : (
+          <p className="text-sm text-muted-foreground">None flagged</p>
+        )}
+      </CardSection>
+
+      <CardSection title="Sentence">
+        <ConfidenceRow label={`Emotion: ${capitalize(chunk.emotion ?? "neutral")}`} value={chunk.emotion_confidence} hue={ANNOT_HUES.emotion} />
+        <ConfidenceRow
+          label={chunk.subjective ? "Subjective" : "Objective"}
+          value={chunk.subjectivity_confidence}
+          hue="var(--muted-foreground)"
+        />
+      </CardSection>
+
+      <p className="text-xs text-muted-foreground leading-snug">
+        Confidence is the model's probability for each label. Each technique has its own threshold for being
+        flagged, so some show with low confidence.
+        {unrecorded && " This article was analyzed before confidence was recorded for emotion, lean and subjectivity."}
+      </p>
+    </div>,
+    document.body,
   );
 }
 
@@ -390,10 +489,11 @@ function toParagraphs(segments: TextSegment[]): TextSegment[][] {
   return paragraphs.filter(p => p.some(seg => seg.text.trim()));
 }
 
-function chunkTip(chunk: Chunk): string {
-  const techList = chunk.techniques.map(t => t.label.replace(/_/g, " ")).join(", ");
-  const emo = chunk.emotion !== "neutral" ? chunk.emotion : "";
-  return [techList, emo].filter(Boolean).join(" · ");
+/** The line of `el` (a highlight that may wrap over several lines) that
+ *  `clientY` is on, or its first line, for placing its analysis card. */
+function lineRect(el: HTMLElement, clientY?: number): DOMRect {
+  const lines = [...el.getClientRects()];
+  return (clientY != null && lines.find(r => clientY >= r.top && clientY <= r.bottom)) || lines[0] || el.getBoundingClientRect();
 }
 
 /**
@@ -417,20 +517,54 @@ export function ArticleText({ text, chunks = NO_CHUNKS, annotate = false, title 
     return toParagraphs(dropLeading(chunkSegments(source, chunks), skip));
   }, [text, chunks, title]);
 
+  // The highlight whose analysis card is showing. A mouse shows it on
+  // hover, the keyboard on focus, and a tap (touch, pen) toggles it.
+  const [active, setActive] = useState<{ chunk: Chunk; anchor: DOMRect; el: HTMLElement } | null>(null);
+  const pointerType = useRef("mouse");
+  const cardId = useId();
+  const open = (el: HTMLElement, chunk: Chunk, clientY?: number) => setActive({ chunk, el, anchor: lineRect(el, clientY) });
+  const close = () => setActive(null);
+
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    const onTapAway = (e: PointerEvent) => !active.el.contains(e.target as Node) && close();
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onTapAway);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onTapAway);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [active]);
+
   if (!paragraphs.length) return null;
   return (
-    <div className="space-y-4 text-lg leading-relaxed text-foreground">
+    <div className={`space-y-4 text-lg leading-relaxed text-foreground ${READING_WIDTH}`}>
       {paragraphs.map((paragraph, i) => (
         <p key={i}>
           {paragraph.map((seg, j) => {
             const cat = annotate && seg.chunk ? chunkCategory(seg.chunk) : null;
             if (!cat) return <span key={j}>{seg.text}</span>;
+            const chunk = seg.chunk!;
             return (
               <span
                 key={j}
-                title={chunkTip(seg.chunk!)}
-                className="annot cursor-help rounded-sm px-0.5"
+                tabIndex={0}
+                aria-describedby={active?.chunk === chunk ? cardId : undefined}
+                className="annot cursor-help rounded-sm px-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 style={hueStyle(ANNOT_HUES[cat] ?? ANNOT_HUES.loaded)}
+                onPointerDown={e => { pointerType.current = e.pointerType; }}
+                onPointerEnter={e => e.pointerType === "mouse" && open(e.currentTarget, chunk, e.clientY)}
+                onPointerLeave={e => e.pointerType === "mouse" && close()}
+                onFocus={e => e.currentTarget.matches(":focus-visible") && open(e.currentTarget, chunk)}
+                onBlur={close}
+                onClick={e => {
+                  if (pointerType.current === "mouse") return;
+                  if (active?.chunk === chunk) close();
+                  else open(e.currentTarget, chunk, e.clientY);
+                }}
               >
                 {seg.text}
               </span>
@@ -438,7 +572,26 @@ export function ArticleText({ text, chunks = NO_CHUNKS, annotate = false, title 
           })}
         </p>
       ))}
+      {active && <ChunkAnalysisCard id={cardId} chunk={active.chunk} anchor={active.anchor} />}
     </div>
+  );
+}
+
+/** "6 outlets · +3 in past 36h": the outlets among a topic's own articles,
+ *  and how many more reported the story within the pipeline's lookback
+ *  window (`recent` counts both). */
+export function OutletCount({ listed, recent, hours = 36, className = "" }: {
+  listed: number;
+  recent?: number | null;
+  hours?: number;
+  className?: string;
+}) {
+  const more = (recent ?? 0) - listed;
+  return (
+    <span className={className} style={{ fontFamily: "var(--font-data)" }}>
+      {listed} outlet{listed !== 1 ? "s" : ""}
+      {more > 0 && <span className="opacity-75"> · +{more} in past {hours}h</span>}
+    </span>
   );
 }
 
@@ -560,9 +713,34 @@ export function formatRelativeDate(iso?: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+// The analyzer's technique labels (backend/inference/labels.py) by their
+// usual names in propaganda-technique research.
+const TECHNIQUE_NAMES: Record<string, string> = {
+  Loaded_Language: "Loaded language",
+  Appeal_to_fear_prejudice: "Appeal to fear or prejudice",
+  Exaggeration_Minimization: "Exaggeration or minimization",
+  Repetition: "Repetition",
+  Flag_Waving: "Flag-waving",
+  Name_Calling_Labeling: "Name-calling or labeling",
+  Reductio_ad_hitlerum: "Reductio ad Hitlerum",
+  Black_and_White_Fallacy: "Black-and-white fallacy",
+  Causal_Oversimplification: "Causal oversimplification",
+  Whataboutism_Straw_Men_Red_Herring: "Whataboutism, straw man or red herring",
+  Straw_Man: "Straw man",
+  Red_Herring: "Red herring",
+  Doubt: "Doubt",
+  Appeal_to_Authority: "Appeal to authority",
+  Thought_terminating_Cliches: "Thought-terminating cliché",
+  Bandwagon: "Bandwagon",
+  Slogans: "Slogans",
+  Obfuscation_Intentional_Vagueness_Confusion: "Obfuscation or vagueness",
+};
+
 export function formatTechnique(label: string): string {
-  return label.replace(/_/g, " ");
+  return TECHNIQUE_NAMES[label] ?? label.replace(/_/g, " ");
 }
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // ─── Shared card wrapper ──────────────────────────────────────────────────────
 
@@ -578,21 +756,19 @@ export function Card({
 
 // ─── Page shell ───────────────────────────────────────────────────────────────
 
-// Page widths. Layout's header/footer use the same values so their edges
-// line up with the page content.
-export const DEFAULT_WIDTH = "max-w-6xl";
-// Near full-bleed, for dense grids like All Articles.
-export const WIDE_WIDTH = "max-w-[120rem]";
+// The one page width, so every tab has the same side margins. Layout's
+// header and footer use it too, so their edges line up with the content.
+// Long prose inside caps its own line length (READING_WIDTH).
+export const PAGE_WIDTH = "max-w-[120rem]";
+// Comfortable line length for paragraphs of running text.
+export const READING_WIDTH = "max-w-[46rem]";
 
-export function PageContainer({ children, narrow = false, wide = false, className = "" }: {
+export function PageContainer({ children, className = "" }: {
   children: React.ReactNode;
-  narrow?: boolean;
-  wide?: boolean;
   className?: string;
 }) {
-  const maxWidth = narrow ? "max-w-4xl" : wide ? WIDE_WIDTH : DEFAULT_WIDTH;
   return (
-    <div className={`mx-auto px-4 sm:px-6 py-8 ${maxWidth} ${className}`}>
+    <div className={`mx-auto px-4 sm:px-6 py-8 ${PAGE_WIDTH} ${className}`}>
       {children}
     </div>
   );

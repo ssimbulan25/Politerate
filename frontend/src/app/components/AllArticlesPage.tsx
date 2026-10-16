@@ -523,7 +523,7 @@ export function AllArticlesPage() {
   const storyCount = sections.reduce((n, s) => n + s.stories.length, 0);
 
   return (
-    <PageContainer wide>
+    <PageContainer>
       <div className="mb-8 pb-6 border-b border-border">
         <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "2.25rem", lineHeight: 1.15 }}>
           All Articles

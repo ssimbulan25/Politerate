@@ -18,7 +18,7 @@ export function ErrorPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <PageContainer narrow>
+      <PageContainer>
         <StateBox>
           <AlertCircle className="text-destructive" size={32} />
           <p className="text-xl font-semibold text-foreground">

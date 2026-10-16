@@ -72,22 +72,29 @@ class PoliterateAnalyzer:
             if tech_probs[i] > TECHNIQUE_THRESHOLDS[TECHNIQUE_LABELS[i]]
         ]
         
-        # Emotion: single-class argmax
-        emotion_idx = torch.argmax(result["emotion_logits"], dim=-1).item()
-        
-        # Subjectivity: binary argmax
-        subj_idx = torch.argmax(result["subjectivity_logits"], dim=-1).item()
-        
-        # Bias: single-class argmax
-        bias_idx = torch.argmax(result["bias_logits"], dim=-1).item()
+        # Emotion, subjectivity and bias: single-class argmax, with the
+        # chosen class's softmax probability as its confidence (shown in
+        # the article page's per-sentence breakdown).
+        emotion_probs = torch.softmax(result["emotion_logits"], dim=-1)[0]
+        emotion_idx = int(torch.argmax(emotion_probs).item())
+
+        subj_probs = torch.softmax(result["subjectivity_logits"], dim=-1)[0]
+        subj_idx = int(torch.argmax(subj_probs).item())
+
+        bias_probs = torch.softmax(result["bias_logits"], dim=-1)[0]
+        bias_idx = int(torch.argmax(bias_probs).item())
         bias_label = BIAS_LABELS[bias_idx]
-        
+
         return {
             "text": text,
             "techniques": techniques,
             "emotion": EMOTION_LABELS[emotion_idx],
+            "emotion_confidence": float(emotion_probs[emotion_idx]),
             "subjective": subj_idx == 1,
+            # Confidence in whichever was chosen, subjective or objective.
+            "subjectivity_confidence": float(subj_probs[subj_idx]),
             "bias": BIAS_DISPLAY_NAMES[bias_label],  # human-readable
+            "bias_confidence": float(bias_probs[bias_idx]),
         }
     
     def predict_article(self, text: str) -> dict:

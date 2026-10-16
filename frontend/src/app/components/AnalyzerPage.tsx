@@ -171,7 +171,7 @@ export function AnalyzerPage() {
   }
 
   return (
-    <PageContainer narrow>
+    <PageContainer>
       {/* Header */}
       <div className="mb-8 pb-6 border-b border-border">
         <h1
@@ -194,119 +194,158 @@ export function AnalyzerPage() {
         </div>
       </div>
 
-      {/* Input card */}
-      <div className="bg-card border border-border rounded p-6 mb-6 shadow-sm space-y-4">
-        <div className="space-y-1.5">
-          <label htmlFor="analyzer-url" className="text-base font-medium text-muted-foreground">
-            Article URL{" "}
-            <span className="text-muted-foreground font-normal">(optional — enables caching)</span>
-          </label>
-          <input
-            id="analyzer-url"
-            type="url"
-            value={urlInput}
-            onChange={e => setUrlInput(e.target.value)}
-            placeholder="https://example.com/article"
-            className="w-full px-3.5 py-2.5 rounded border border-border bg-input-background text-foreground text-base placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-2 focus:ring-[var(--accent)]/20 transition-colors"
-          />
-        </div>
+      {/* Wide screens: the form on the left, staying in view, and what it
+          produces beside it. */}
+      <div className="xl:grid xl:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] xl:gap-8 xl:items-start">
+        {/* Input card */}
+        <div className="bg-card border border-border rounded p-6 mb-6 xl:mb-0 xl:sticky xl:top-24 shadow-sm space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="analyzer-url" className="text-base font-medium text-muted-foreground">
+              Article URL{" "}
+              <span className="text-muted-foreground font-normal">(optional — enables caching)</span>
+            </label>
+            <input
+              id="analyzer-url"
+              type="url"
+              value={urlInput}
+              onChange={e => setUrlInput(e.target.value)}
+              placeholder="https://example.com/article"
+              className="w-full px-3.5 py-2.5 rounded border border-border bg-input-background text-foreground text-base placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-2 focus:ring-[var(--accent)]/20 transition-colors"
+            />
+          </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="analyzer-text" className="text-base font-medium text-muted-foreground">
-            Article text
-          </label>
-          <textarea
-            id="analyzer-text"
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="Paste article text here…"
-            rows={9}
-            className="w-full px-3.5 py-2.5 rounded border border-border bg-input-background text-foreground text-base placeholder:text-muted-foreground resize-y focus:outline-none focus:border-accent focus:ring-2 focus:ring-[var(--accent)]/20 transition-colors"
-          />
-          <div className="flex items-center gap-2 text-sm text-muted-foreground" style={{ fontFamily: "var(--font-data)" }}>
-            <span>{charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()} chars</span>
-            {tooShort && <span className="text-destructive">· minimum {MIN_CHARS}</span>}
-            {tooLong && <span className="text-destructive">· over the limit, shorten the text</span>}
+          <div className="space-y-1.5">
+            <label htmlFor="analyzer-text" className="text-base font-medium text-muted-foreground">
+              Article text
+            </label>
+            <textarea
+              id="analyzer-text"
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="Paste article text here…"
+              rows={9}
+              className="w-full px-3.5 py-2.5 rounded border border-border bg-input-background text-foreground text-base placeholder:text-muted-foreground resize-y focus:outline-none focus:border-accent focus:ring-2 focus:ring-[var(--accent)]/20 transition-colors"
+            />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground" style={{ fontFamily: "var(--font-data)" }}>
+              <span>{charCount.toLocaleString()} / {MAX_CHARS.toLocaleString()} chars</span>
+              {tooShort && <span className="text-destructive">· minimum {MIN_CHARS}</span>}
+              {tooLong && <span className="text-destructive">· over the limit, shorten the text</span>}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2.5 pt-1">
+            <button
+              onClick={analyze}
+              disabled={loading || tooShort || tooLong}
+              className="px-6 py-2.5 bg-primary text-primary-foreground rounded text-base font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+            >
+              {loading ? "Analyzing…" : "Analyze text"}
+            </button>
+            <button
+              onClick={() => { setText(SAMPLE_TEXT); }}
+              className="px-5 py-2.5 bg-secondary text-secondary-foreground rounded text-base font-medium hover:bg-muted transition-colors"
+            >
+              Load sample
+            </button>
+            <button
+              onClick={() => { setText(""); setUrlInput(""); setResult(null); setError(null); }}
+              disabled={loading}
+              className="px-5 py-2.5 bg-secondary text-secondary-foreground rounded text-base font-medium hover:bg-muted transition-colors"
+            >
+              Clear
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2.5 pt-1">
-          <button
-            onClick={analyze}
-            disabled={loading || tooShort || tooLong}
-            className="px-6 py-2.5 bg-primary text-primary-foreground rounded text-base font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
-          >
-            {loading ? "Analyzing…" : "Analyze text"}
-          </button>
-          <button
-            onClick={() => { setText(SAMPLE_TEXT); }}
-            className="px-5 py-2.5 bg-secondary text-secondary-foreground rounded text-base font-medium hover:bg-muted transition-colors"
-          >
-            Load sample
-          </button>
-          <button
-            onClick={() => { setText(""); setUrlInput(""); setResult(null); setError(null); }}
-            disabled={loading}
-            className="px-5 py-2.5 bg-secondary text-secondary-foreground rounded text-base font-medium hover:bg-muted transition-colors"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
+        <div className="min-w-0">
+          {/* How it works */}
+          {!result && !loading && (
+            <div className="bg-secondary border border-border rounded p-5 text-base space-y-3">
+              <h3
+                className="font-semibold"
+                style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem" }}
+              >
+                How this works
+              </h3>
+              <ul className="space-y-1.5 text-muted-foreground">
+                {[
+                  "Text is sent to your local model server for analysis",
+                  "AI models identify emotionally charged words and persuasion techniques",
+                  "Each text chunk is labeled with its classification and explanation",
+                  "Results are highlighted in the original text for easy review",
+                  "Detailed breakdown shows exactly why each section was flagged",
+                ].map((item, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-muted-foreground shrink-0">·</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-muted-foreground border-t border-border pt-3">
+                All analysis happens on your local model server. No data is sent to third-party services.
+              </p>
+            </div>
+          )}
 
-      {/* How it works */}
-      {!result && !loading && (
-        <div className="bg-secondary border border-border rounded p-5 text-base space-y-3">
-          <h3
-            className="font-semibold"
-            style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem" }}
-          >
-            How this works
-          </h3>
-          <ul className="space-y-1.5 text-muted-foreground">
-            {[
-              "Text is sent to your local model server for analysis",
-              "AI models identify emotionally charged words and persuasion techniques",
-              "Each text chunk is labeled with its classification and explanation",
-              "Results are highlighted in the original text for easy review",
-              "Detailed breakdown shows exactly why each section was flagged",
-            ].map((item, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-muted-foreground shrink-0">·</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-sm text-muted-foreground border-t border-border pt-3">
-            All analysis happens on your local model server. No data is sent to third-party services.
-          </p>
-        </div>
-      )}
+          {/* Loading */}
+          {loading && (
+            <StateBox>
+              <Spinner />
+              <p>Analyzing text…</p>
+            </StateBox>
+          )}
 
-      {/* Loading */}
-      {loading && (
-        <StateBox>
-          <Spinner />
-          <p>Analyzing text…</p>
-        </StateBox>
-      )}
+          {/* Error */}
+          {!loading && error && (
+            <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded text-base">
+              <AlertCircle size={18} className="text-destructive shrink-0 mt-0.5" />
+              <span className="text-destructive">{error}</span>
+            </div>
+          )}
 
-      {/* Error */}
-      {!loading && error && (
-        <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded text-base">
-          <AlertCircle size={18} className="text-destructive shrink-0 mt-0.5" />
-          <span className="text-destructive">{error}</span>
-        </div>
-      )}
+          {/* Results */}
+          {!loading && result && (
+            <div className="space-y-5">
+              {/* Annotated text card */}
+              {result.chunks?.length > 0 && (
+                <div className="bg-card border border-border rounded overflow-hidden shadow-sm">
+                  <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border">
+                    <div>
+                      <h2
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontWeight: 700,
+                          fontSize: "1.4rem",
+                        }}
+                      >
+                        Annotated text
+                        {result.cached && (
+                          <span className="ml-2 align-middle text-sm font-medium px-2.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                            cached
+                          </span>
+                        )}
+                      </h2>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Hover highlighted passages for details.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowAnnotated(a => !a)}
+                      className="text-sm font-medium border border-border rounded px-4 py-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    >
+                      {showAnnotated ? "Hide analysis" : "Show analysis"}
+                    </button>
+                  </div>
+                  <div className="px-6 py-5">
+                    <AnnotationLegend />
+                    <ArticleText text={analyzedText} chunks={result.chunks} annotate={showAnnotated} />
+                  </div>
+                </div>
+              )}
 
-      {/* Results */}
-      {!loading && result && (
-        <div className="space-y-5">
-          {/* Annotated text card */}
-          {result.chunks?.length > 0 && (
-            <div className="bg-card border border-border rounded overflow-hidden shadow-sm">
-              <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border">
-                <div>
+              {/* Summary card */}
+              <div className="bg-card border border-border rounded overflow-hidden shadow-sm">
+                <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                   <h2
                     style={{
                       fontFamily: "var(--font-display)",
@@ -314,86 +353,53 @@ export function AnalyzerPage() {
                       fontSize: "1.4rem",
                     }}
                   >
-                    Annotated text
-                    {result.cached && (
-                      <span className="ml-2 align-middle text-sm font-medium px-2.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                        cached
-                      </span>
-                    )}
+                    Analysis Summary
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Hover highlighted passages for details.
-                  </p>
+                  <span
+                    className="text-sm text-muted-foreground"
+                    style={{ fontFamily: "var(--font-data)" }}
+                  >
+                    {result.chunks?.length ?? 0} chunks · {result.model_version ?? "—"}
+                  </span>
                 </div>
-                <button
-                  onClick={() => setShowAnnotated(a => !a)}
-                  className="text-sm font-medium border border-border rounded px-4 py-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                >
-                  {showAnnotated ? "Hide analysis" : "Show analysis"}
-                </button>
+                <div className="p-6">
+                  <SummaryGrid article={result.article} chunks={result.chunks ?? []} modelVersion={result.model_version} />
+                </div>
               </div>
-              <div className="px-6 py-5">
-                <AnnotationLegend />
-                <ArticleText text={analyzedText} chunks={result.chunks} annotate={showAnnotated} />
-              </div>
-            </div>
-          )}
 
-          {/* Summary card */}
-          <div className="bg-card border border-border rounded overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h2
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  fontSize: "1.4rem",
-                }}
-              >
-                Analysis Summary
-              </h2>
-              <span
-                className="text-sm text-muted-foreground"
-                style={{ fontFamily: "var(--font-data)" }}
-              >
-                {result.chunks?.length ?? 0} chunks · {result.model_version ?? "—"}
-              </span>
-            </div>
-            <div className="p-6">
-              <SummaryGrid article={result.article} chunks={result.chunks ?? []} modelVersion={result.model_version} />
-            </div>
-          </div>
-
-          {/* Chunk breakdown */}
-          {result.chunks?.length > 0 && (
-            <div className="bg-card border border-border rounded overflow-hidden shadow-sm">
-              <button
-                onClick={() => setShowChunks(s => !s)}
-                className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-secondary transition-colors"
-              >
-                <h2
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontWeight: 700,
-                    fontSize: "1.4rem",
-                  }}
-                >
-                  Detailed Breakdown
-                </h2>
-                <span className="text-sm font-medium text-muted-foreground">
-                  {showChunks ? "Hide" : `Show ${result.chunks.length} chunks`}
-                </span>
-              </button>
-              {showChunks && (
-                <div className="p-6 pt-0 space-y-3">
-                  {result.chunks.map((c, i) => (
-                    <ChunkCard key={i} chunk={c} />
-                  ))}
+              {/* Chunk breakdown */}
+              {result.chunks?.length > 0 && (
+                <div className="bg-card border border-border rounded overflow-hidden shadow-sm">
+                  <button
+                    onClick={() => setShowChunks(s => !s)}
+                    className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-secondary transition-colors"
+                  >
+                    <h2
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontWeight: 700,
+                        fontSize: "1.4rem",
+                      }}
+                    >
+                      Detailed Breakdown
+                    </h2>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {showChunks ? "Hide" : `Show ${result.chunks.length} chunks`}
+                    </span>
+                  </button>
+                  {showChunks && (
+                    <div className="p-6 pt-0 space-y-3">
+                      {result.chunks.map((c, i) => (
+                        <ChunkCard key={i} chunk={c} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
         </div>
-      )}
+      </div>
     </PageContainer>
   );
 }

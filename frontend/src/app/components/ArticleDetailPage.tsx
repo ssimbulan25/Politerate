@@ -52,7 +52,7 @@ export function ArticleDetailPage() {
   const hasChunks = data?.chunks && data.chunks.length > 0 && data.analysis_status !== "pending";
 
   return (
-    <PageContainer narrow>
+    <PageContainer>
       {/* Back link */}
       <Link
         to="/all-articles"
@@ -127,9 +127,10 @@ export function ArticleDetailPage() {
           {/* Article body */}
           <div className="p-6 sm:p-8">
             {hasChunks ? (
-              <>
-                {/* Toggle */}
-                <div className="flex items-center justify-between gap-4 mb-4">
+              // Wide screens: the text at a reading width, its key and
+              // toggle in a column beside it that stays in view.
+              <div className="lg:grid lg:grid-cols-[minmax(0,46rem)_16rem] lg:gap-12 lg:items-start">
+                <div className="flex items-center justify-between gap-4 mb-4 lg:order-2 lg:flex-col lg:items-start lg:sticky lg:top-24 lg:mb-0">
                   <AnnotationLegend />
                   <button
                     onClick={() => setShowAnnotated(a => !a)}
@@ -139,8 +140,10 @@ export function ArticleDetailPage() {
                   </button>
                 </div>
 
-                <ArticleText text={data.text} chunks={data.chunks} annotate={showAnnotated} title={data.title} />
-              </>
+                <div className="min-w-0 lg:order-1">
+                  <ArticleText text={data.text} chunks={data.chunks} annotate={showAnnotated} title={data.title} />
+                </div>
+              </div>
             ) : data.text ? (
               <ArticleText text={data.text} title={data.title} />
             ) : (

@@ -1,7 +1,7 @@
 import type { CSSProperties, MouseEvent } from "react";
 import { Link } from "react-router";
 import { ArrowRight } from "lucide-react";
-import { REGIONS, Region, RegionIcon, SourceBadge, SectionLabel } from "./shared";
+import { OutletCount, REGIONS, Region, RegionIcon, SourceBadge, SectionLabel } from "./shared";
 import { GenreWeights, TopicTags, primaryTag, tagStyle, topicTags } from "./topicTags";
 import { sanitizeHtml } from "../sanitize";
 
@@ -12,8 +12,10 @@ export interface BriefSection {
   article_count: number;
   // Missing on briefs built before regions existed; those count as U.S. news.
   region?: Region;
-  // Missing on older briefs.
+  // Missing on older briefs. The topic's own outlets, and (recent) all that
+  // reported the story in the last `lookback_hours`.
   outlet_count?: number;
+  recent_outlet_count?: number;
   category?: string;
   relevance?: number;
   genre_weights?: Partial<GenreWeights> | null;
@@ -26,6 +28,7 @@ export interface DailySummary {
   source_count: number;
   source_links: Array<{ source: string; url: string }>;
   last_updated?: string;
+  lookback_hours?: number;
 }
 
 export function StatPill({ value, label }: { value: number; label: string }) {
@@ -93,11 +96,12 @@ export function bentoSpans(n: number): TileSpan[] {
  *  spanned, rows spanned, on a twelve-column grid of `rows` equal rows. */
 type FitPlace = [number, number, number, number];
 
-// Screen-filling layouts by topic count, most relevant topic first. Every
-// one fills its grid exactly, varies tile sizes (the lead story biggest,
-// then tall and wide tiles) and keeps tiles at least a quarter wide, so
-// headlines stay readable. The brief holds at most ten topics
-// (summarizer.BRIEF_SLOTS); more falls back to the scrolling layout.
+// Screen-filling layouts by topic count, most relevant topic first: the
+// brief's ten topics (summarizer.BRIEF_SLOTS), or fewer on a slow day, on
+// every screen. Every layout fills its grid exactly, sizes tiles by
+// relevance (the lead story biggest, then tall and wide tiles, then the
+// rest) and keeps tiles at least a quarter wide. Bigger screens get bigger
+// tiles and text (FIT_TILE, globals.css), not more topics.
 const FIT_LAYOUTS: Record<number, { rows: number; tiles: FitPlace[] }> = {
   1: { rows: 1, tiles: [[1, 1, 12, 1]] },
   2: { rows: 1, tiles: [[1, 1, 7, 1], [8, 1, 5, 1]] },
@@ -111,6 +115,11 @@ const FIT_LAYOUTS: Record<number, { rows: number; tiles: FitPlace[] }> = {
   10: { rows: 4, tiles: [[1, 1, 6, 2], [10, 1, 3, 2], [7, 1, 3, 1], [7, 2, 3, 1], [7, 3, 6, 1], [1, 3, 3, 1], [4, 3, 3, 1], [1, 4, 4, 1], [5, 4, 4, 1], [9, 4, 4, 1]] },
 };
 
+// Where the brief scrolls (phones, small windows), each topic's points by
+// relevance rank: the lead story four, then three, two, and one for the rest.
+const RANK_POINTS = [4, 3, 3, 2, 2, 2];
+const rankPoints = (rank: number) => RANK_POINTS[rank] ?? 1;
+
 // What each tile size shows: the lead story its key points, the rest their
 // headline and top point. Points are clamped to two lines so rows stay
 // short; headlines never are.
@@ -122,25 +131,33 @@ const TILE: Record<TileSize, { bullets: number; headline: string; lift: number }
 };
 
 // Filling the screen, tiles show as many points as fit (globals.css hides
-// any that would be cut off), up to these, and headlines scale with the
-// tile's width (cqi: the tile is a size container there).
+// any that would be cut off), up to these, in text that grows with the
+// brief. Headlines scale with the tile (a size container there): with its
+// width (cqi), so bigger screens and bigger tiles get bigger headlines, but
+// no bigger than its height leaves room for (cqh). Short tiles shorten them
+// (globals.css).
 const FIT_TILE = {
-  hero:  { bullets: 5, headline: "clamp(1.25rem, 0.6rem + 2cqi, 1.75rem)", lines: 3 },
-  other: { bullets: 3, headline: "clamp(1rem, 0.7rem + 1.7cqi, 1.4rem)",     lines: 3 },
+  hero:  { bullets: 5, headline: "clamp(1.25rem, min(0.5rem + 2.6cqi, 0.3rem + 10cqh), 2.75rem)", lines: 3 },
+  other: { bullets: 3, headline: "clamp(1rem, min(0.4rem + 2.8cqi, 0.25rem + 16cqh), 1.85rem)",  lines: 3 },
 };
 
 function BriefTile({
   section,
   span,
+  rank = 0,
   fit,
+  lookbackHours,
   href,
   onSelect,
 }: {
   section: BriefSection;
   span: TileSpan;
+  // Its place in the brief, most relevant first.
+  rank?: number;
   // Its place when the brief fills the screen; the flowing span applies
   // where it doesn't (narrow or short windows).
   fit?: FitPlace;
+  lookbackHours?: number;
   href: string;
   onSelect?: (clusterId: string) => void;
 }) {
@@ -154,7 +171,12 @@ function BriefTile({
     "--r": span.r,
     "--c2": span.c2,
     "--lift": t.lift,
-    ...(fit && { "--fx": fit[0], "--fy": fit[1], "--fw": fit[2], "--fh": fit[3], "--headline-lines": f!.lines }),
+    // Headline sizes for each layout; globals.css picks the one in use.
+    "--flow-headline": t.headline,
+    ...(fit && {
+      "--fx": fit[0], "--fy": fit[1], "--fw": fit[2], "--fh": fit[3],
+      "--fit-headline": f!.headline, "--headline-lines": f!.lines,
+    }),
   } as CSSProperties;
 
   function handleClick(e: MouseEvent) {
@@ -184,9 +206,12 @@ function BriefTile({
       <div className="relative flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <TopicTags tags={tags} />
         {outlets != null && (
-          <span className="text-sm text-muted-foreground" style={{ fontFamily: "var(--font-data)" }}>
-            {outlets} outlet{outlets !== 1 ? "s" : ""}
-          </span>
+          <OutletCount
+            listed={outlets}
+            recent={section.recent_outlet_count}
+            hours={lookbackHours}
+            className="text-[0.875em] text-muted-foreground"
+          />
         )}
       </div>
 
@@ -195,16 +220,21 @@ function BriefTile({
         style={{
           fontFamily: "var(--font-display)",
           fontWeight: span.size === "hero" ? 800 : 700,
-          fontSize: f ? f.headline : t.headline,
           lineHeight: 1.18,
         }}
       >
         {section.headline}
       </h3>
 
+      {/* Today's Brief renders enough points for both of its layouts and
+          hides the rest in each (globals.css): up to f.bullets filling the
+          screen, rankPoints(rank) where it scrolls. */}
       <ul className="tile-points relative space-y-1.5 text-base text-foreground/85 leading-snug">
-        {section.bullets.slice(0, f ? f.bullets : t.bullets).map((b, i) => (
-          <li key={i} className="flex gap-2">
+        {section.bullets.slice(0, f ? Math.max(f.bullets, rankPoints(rank)) : t.bullets).map((b, i) => (
+          <li
+            key={i}
+            className={`flex gap-2 ${f && i >= rankPoints(rank) ? "point-beyond-flow" : ""} ${f && i >= f.bullets ? "point-beyond-fit" : ""}`}
+          >
             <span aria-hidden="true" className="mt-[0.5em] h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "var(--tag)" }} />
             <span className="line-clamp-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(b) }} />
           </li>
@@ -238,7 +268,8 @@ export function canFitScreen(count: number): boolean {
  * `fit` (Today's Brief) puts every topic in one grid, most relevant first,
  * each tile showing its region in its tags. On screens big enough
  * (globals.css, "Daily Brief filling the screen") that grid fills the
- * space it's given, laid out by FIT_LAYOUTS; elsewhere it flows and scrolls.
+ * space it's given, laid out by FIT_LAYOUTS; elsewhere it's a list that
+ * scrolls, more relevant topics showing more points.
  */
 export function DailyBrief({
   data,
@@ -264,7 +295,9 @@ export function DailyBrief({
               key={s.cluster_id}
               section={s}
               span={spans[i]}
+              rank={i}
               fit={layout.tiles[i]}
+              lookbackHours={data.lookback_hours}
               href={topicHref(s.cluster_id)}
               onSelect={onSelect}
             />
@@ -299,6 +332,7 @@ export function DailyBrief({
                   key={s.cluster_id}
                   section={s}
                   span={spans[i]}
+                  lookbackHours={data.lookback_hours}
                   href={topicHref(s.cluster_id)}
                   onSelect={onSelect}
                 />

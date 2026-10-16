@@ -430,7 +430,7 @@ export function LearnPage() {
   }, []);
 
   return (
-    <PageContainer narrow>
+    <PageContainer>
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8 pb-6 border-b border-border flex-wrap">
         <div>
@@ -455,7 +455,8 @@ export function LearnPage() {
         </span>
       </div>
 
-      <div className="space-y-6">
+      {/* Side by side on wide screens. */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         <TermOfDayCard term={term} loading={termLoading} error={termError} />
         <QuizCard streak={streak} onStreak={setStreak} />
       </div>

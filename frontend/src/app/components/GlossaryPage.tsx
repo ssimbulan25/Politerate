@@ -121,7 +121,7 @@ export function GlossaryPage() {
   }, [terms, query, category]);
 
   return (
-    <PageContainer narrow>
+    <PageContainer>
       {/* Header */}
       <div className="mb-8 pb-6 border-b border-border">
         <h1
@@ -201,7 +201,7 @@ export function GlossaryPage() {
       )}
 
       {!loading && !error && filtered.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 items-start">
           {filtered.map((term, i) => (
             <TermCard key={term.term} term={term} index={i} />
           ))}

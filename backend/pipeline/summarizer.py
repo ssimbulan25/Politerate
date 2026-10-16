@@ -46,6 +46,8 @@ WORLD_REGION = "world"
 # MAX_CLUSTERS_IN_BRIEF_INPUT caps what we actually feed to the hierarchical
 # BART pass — keeping the input short avoids degenerate generation when BART
 # runs out of coherent things to say.
+# The same number on every screen: bigger screens show them in bigger tiles
+# (frontend DailyBrief, FIT_LAYOUTS).
 BRIEF_SLOTS = 10
 MIN_BRIEF_OUTLETS = 3
 BRIEF_WEIGHTS = {"us_politics": 1.5, "world_politics": 1.25, "genre": 1.0}
@@ -1029,7 +1031,7 @@ class PoliteratePipeline:
         data = self.get_daily_summary_data(clusters, include_unified=False)
         return {
             key: data[key]
-            for key in ("sections", "cluster_count", "source_count", "source_links", "total_articles")
+            for key in ("sections", "cluster_count", "source_count", "source_links", "total_articles", "lookback_hours")
         }
 
     def get_daily_summary_data(self, clusters: list[dict], include_unified: bool = True) -> dict:
@@ -1074,9 +1076,12 @@ class PoliteratePipeline:
                 "article_count": c.get("article_count", 0),
                 "region": cluster_region(c),
                 # The outlets the card's topic contains (so the count matches
-                # what opening it lists), and for sizing topics, its weighted
-                # relevance (brief_relevance), highest first.
+                # what opening it lists), and those that reported the story
+                # in the last LOOKBACK_HOURS, earlier coverage included; for
+                # sizing topics, its weighted relevance (brief_relevance),
+                # highest first.
                 "outlet_count": listed_outlets(c),
+                "recent_outlet_count": cluster_outlets(c),
                 "category": c.get("category") or POLITICS,
                 "relevance": brief_relevance(c),
                 # For tagging policy topics with their genre too; missing on
@@ -1094,6 +1099,8 @@ class PoliteratePipeline:
             "sources": unique_sources,
             "source_links": source_links,
             "total_articles": all_article_count,
+            # The window sections' recent_outlet_count covers.
+            "lookback_hours": LOOKBACK_HOURS,
             "clusters": filtered_clusters
         }
 

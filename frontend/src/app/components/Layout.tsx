@@ -1,12 +1,8 @@
 import { useState } from "react";
-import { Outlet, NavLink, useLocation } from "react-router";
+import { Outlet, NavLink } from "react-router";
 import { Menu, Moon, Sun, X } from "lucide-react";
-import { BrandIcon, DEFAULT_WIDTH, TermTooltip, WIDE_WIDTH } from "./shared";
+import { BrandIcon, PAGE_WIDTH, TermTooltip } from "./shared";
 import { useTheme } from "../theme";
-
-// Pages laid out with PageContainer `wide`; the header and footer widen to
-// match so their edges line up with the content.
-const WIDE_PAGES = ["/all-articles", "/topics"];
 
 const NAV_LINKS = [
   { to: "/",             label: "Today",    end: true  },
@@ -36,8 +32,8 @@ function ThemeToggle() {
 
 export function Layout() {
   const [open, setOpen] = useState(false);
-  const { pathname } = useLocation();
-  const width = WIDE_PAGES.some(p => pathname.startsWith(p)) ? WIDE_WIDTH : DEFAULT_WIDTH;
+  // The page width every page uses, so the header's edges line up with theirs.
+  const width = PAGE_WIDTH;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -73,7 +69,7 @@ export function Layout() {
                 end={link.end}
                 className={({ isActive }) =>
                   [
-                    "flex items-center px-3 xl:px-4 text-base transition-colors relative",
+                    "flex items-center px-3 xl:px-4 text-base font-display transition-colors relative",
                     isActive
                       ? "text-foreground font-semibold"
                       : "text-muted-foreground hover:text-brand-accent hover:bg-secondary/60",
@@ -123,7 +119,7 @@ export function Layout() {
                   onClick={() => setOpen(false)}
                   className={({ isActive }) =>
                     [
-                      "px-4 py-3 text-lg rounded transition-colors",
+                      "px-4 py-3 text-lg font-display rounded transition-colors",
                       isActive
                         ? "bg-secondary text-foreground font-medium"
                         : "text-muted-foreground hover:text-brand-accent hover:bg-secondary",
