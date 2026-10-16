@@ -1,4 +1,4 @@
-import { READING_WIDTH, SectionLabel } from "./shared";
+import { SectionLabel } from "./shared";
 import { safeUrl, sanitizeHtml } from "../sanitize";
 
 export interface TopicDetail {
@@ -61,7 +61,7 @@ export function TopicSummary({
   if (!detailed?.overview) {
     return (
       <div
-        className={`text-lg text-foreground leading-relaxed ${READING_WIDTH} ${MARK_CLASSES}`}
+        className={`text-lg text-foreground leading-relaxed ${MARK_CLASSES}`}
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(fallbackHtml) }}
       />
     );
@@ -74,7 +74,7 @@ export function TopicSummary({
         <RichText
           html={detailed.overview_html}
           text={detailed.overview}
-          className={`text-lg text-foreground leading-relaxed ${READING_WIDTH} ${MARK_CLASSES}`}
+          className={`text-lg text-foreground leading-relaxed ${MARK_CLASSES}`}
         />
       </div>
 

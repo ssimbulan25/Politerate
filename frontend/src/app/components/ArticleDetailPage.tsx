@@ -127,9 +127,9 @@ export function ArticleDetailPage() {
           {/* Article body */}
           <div className="p-6 sm:p-8">
             {hasChunks ? (
-              // Wide screens: the text at a reading width, its key and
-              // toggle in a column beside it that stays in view.
-              <div className="lg:grid lg:grid-cols-[minmax(0,46rem)_16rem] lg:gap-12 lg:items-start">
+              // Wide screens: the text across the page, its key and toggle
+              // in a column beside it that stays in view.
+              <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-12 lg:items-start">
                 <div className="flex items-center justify-between gap-4 mb-4 lg:order-2 lg:flex-col lg:items-start lg:sticky lg:top-24 lg:mb-0">
                   <AnnotationLegend />
                   <button

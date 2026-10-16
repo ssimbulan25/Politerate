@@ -541,7 +541,7 @@ export function ArticleText({ text, chunks = NO_CHUNKS, annotate = false, title 
 
   if (!paragraphs.length) return null;
   return (
-    <div className={`space-y-4 text-lg leading-relaxed text-foreground ${READING_WIDTH}`}>
+    <div className="space-y-4 text-lg leading-relaxed text-foreground">
       {paragraphs.map((paragraph, i) => (
         <p key={i}>
           {paragraph.map((seg, j) => {
@@ -758,10 +758,7 @@ export function Card({
 
 // The one page width, so every tab has the same side margins. Layout's
 // header and footer use it too, so their edges line up with the content.
-// Long prose inside caps its own line length (READING_WIDTH).
 export const PAGE_WIDTH = "max-w-[120rem]";
-// Comfortable line length for paragraphs of running text.
-export const READING_WIDTH = "max-w-[46rem]";
 
 export function PageContainer({ children, className = "" }: {
   children: React.ReactNode;
