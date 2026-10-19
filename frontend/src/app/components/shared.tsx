@@ -760,6 +760,17 @@ export function Card({
 // header and footer use it too, so their edges line up with the content.
 export const PAGE_WIDTH = "max-w-[120rem]";
 
+// Every tab's title and the intro line under it, so they match across the
+// site: about 36px titles on phones to 48px from 1366px wide, and 18px to
+// 22px intros. Intros span the page.
+export const PAGE_TITLE_STYLE: React.CSSProperties = {
+  fontFamily: "var(--font-display)",
+  fontWeight: 800,
+  fontSize: "clamp(2.25rem, 1.75rem + 1.4vw, 3rem)",
+  lineHeight: 1.1,
+};
+export const PAGE_INTRO_CLASS = "mt-2 text-muted-foreground leading-relaxed text-[clamp(1.125rem,1rem+0.35vw,1.375rem)]";
+
 export function PageContainer({ children, className = "" }: {
   children: React.ReactNode;
   className?: string;

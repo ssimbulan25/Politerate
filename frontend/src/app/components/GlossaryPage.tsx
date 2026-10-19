@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Search, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { Spinner, StateBox, PageContainer, SectionLabel } from "./shared";
+import { Spinner, StateBox, PageContainer, SectionLabel, PAGE_INTRO_CLASS, PAGE_TITLE_STYLE } from "./shared";
 import { errorMessage, fetchJson } from "../api";
 import { safeUrl } from "../sanitize";
 
@@ -125,16 +125,11 @@ export function GlossaryPage() {
       {/* Header */}
       <div className="mb-8 pb-6 border-b border-border">
         <h1
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 800,
-            fontSize: "2.25rem",
-            lineHeight: 1.15,
-          }}
+          style={PAGE_TITLE_STYLE}
         >
           Political Glossary
         </h1>
-        <p className="mt-2 text-lg text-muted-foreground">
+        <p className={PAGE_INTRO_CLASS}>
           Learn the meaning of political terms used in today's news.
         </p>
       </div>

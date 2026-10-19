@@ -129,8 +129,8 @@ export function HomePage() {
               Today's Brief
             </h1>
             <p className="home-intro mt-2 max-w-2xl text-lg text-muted-foreground leading-relaxed">
-              The day's most-covered stories, summarized across outlets. Hover a highlighted term
-              for its definition; open a story for every outlet's account.
+              Today's most covered stories, summarized across outlets across the political spectrum to focus only on relevant information.
+              Open a story for every outlet's account and the article credibility analysis.
             </p>
           </div>
           {daily && !isEmpty && (

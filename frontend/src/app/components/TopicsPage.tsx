@@ -1,7 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { AlertCircle, List, Map as MapIcon, RefreshCw } from "lucide-react";
-import { AiBanner, OutletCount, PAGE_WIDTH, SectionLabel, SourceBadge, Spinner, StateBox, formatRelativeDate } from "./shared";
+import {
+  AiBanner, OutletCount, PAGE_INTRO_CLASS, PAGE_TITLE_STYLE, PAGE_WIDTH, SectionLabel, SourceBadge, Spinner, StateBox,
+  formatRelativeDate,
+} from "./shared";
 import { KeyTermChips } from "./TopicSummary";
 import { TopicMap } from "./TopicMap";
 import { errorMessage, fetchJson } from "../api";
@@ -239,11 +242,11 @@ export function TopicsPage() {
         <header className="flex flex-wrap items-end justify-between gap-4 mb-5">
           <div>
             <h1
-              style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "2.25rem", lineHeight: 1.15 }}
+              style={PAGE_TITLE_STYLE}
             >
               Topics
             </h1>
-            <p className="mt-1 text-lg text-muted-foreground max-w-3xl">
+            <p className={PAGE_INTRO_CLASS}>
               {view === "map"
                 ? "Every topic today, placed by what it's about: politics at the center, health, tech and business around it, policy in between. Similar stories sit close together."
                 : "Every topic today, grouped by tag and ordered by how widely each was reported."}

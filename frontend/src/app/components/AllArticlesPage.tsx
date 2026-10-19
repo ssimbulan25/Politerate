@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AlertCircle, ChevronDown, ChevronUp, ExternalLink, Search, SlidersHorizontal, X } from "lucide-react";
-import { Spinner, StateBox, LeanBadge, CredBadge, PageContainer, SectionLabel, Region, siteToday } from "./shared";
+import {
+  Spinner, StateBox, LeanBadge, CredBadge, PageContainer, SectionLabel, Region, siteToday,
+  PAGE_INTRO_CLASS, PAGE_TITLE_STYLE,
+} from "./shared";
 import { TAG_ORDER, TOPIC_TAGS, TagKey, TagSwatch, TopicTag, primaryTag } from "./topicTags";
 import { errorMessage, fetchJson } from "../api";
 import { safeUrl } from "../sanitize";
@@ -525,10 +528,10 @@ export function AllArticlesPage() {
   return (
     <PageContainer>
       <div className="mb-8 pb-6 border-b border-border">
-        <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "2.25rem", lineHeight: 1.15 }}>
+        <h1 style={PAGE_TITLE_STYLE}>
           All Articles
         </h1>
-        <p className="mt-2 text-lg text-muted-foreground max-w-4xl">
+        <p className={PAGE_INTRO_CLASS}>
           Every article from the past 7 days. Each story shows its most credible article, with the other
           outlets that covered it one click away. Filter by day, genre, credibility or outlet.
         </p>

@@ -4,7 +4,7 @@ import { ANALYZE_TIMEOUT_MS, errorMessage, fetchJson } from "../api";
 import {
   Spinner, StateBox, AnnotationLegend, ArticleText, BiasBar,
   EmotionBadge, SubjectivityBar, SectionLabel, PageContainer,
-  Chunk, formatTechnique, chunkCategory, ANNOT_HUES,
+  Chunk, formatTechnique, chunkCategory, ANNOT_HUES, PAGE_INTRO_CLASS, PAGE_TITLE_STYLE,
 } from "./shared";
 
 // Same limits as the server (backend/api/routes/analyze.py).
@@ -175,16 +175,11 @@ export function AnalyzerPage() {
       {/* Header */}
       <div className="mb-8 pb-6 border-b border-border">
         <h1
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 800,
-            fontSize: "2.25rem",
-            lineHeight: 1.15,
-          }}
+          style={PAGE_TITLE_STYLE}
         >
           Text Analyzer
         </h1>
-        <p className="mt-2 text-lg text-muted-foreground">
+        <p className={PAGE_INTRO_CLASS}>
           Paste any article or excerpt. Politerate flags emotion, persuasion techniques,
           subjectivity, and political lean — chunk by chunk.
         </p>

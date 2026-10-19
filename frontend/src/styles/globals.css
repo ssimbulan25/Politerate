@@ -160,7 +160,6 @@ mark {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    --home-title-size: clamp(1.75rem, 2.4vw, 2.25rem);
   }
   body:has(.fit-screen) .site-footer,
   .fit-screen .fit-screen-hide {
@@ -183,12 +182,6 @@ mark {
     flex-wrap: nowrap;
     padding-bottom: 0.75rem;
     margin-bottom: 0.75rem;
-  }
-  /* Narrower, so the color key beside it fits on one line. */
-  .fit-screen .home-intro {
-    margin-top: 0.25rem;
-    max-width: 36rem;
-    font-size: 1rem;
   }
   .bento-fit-wrap {
     flex: 1;
@@ -234,27 +227,17 @@ mark {
     -webkit-line-clamp: var(--headline-lines);
     overflow: hidden;
   }
-  /* Points form a column that wraps, so a point that wouldn't fit whole
-     moves to a second column, clipped out of sight, rather than showing
-     cut off. The empty first item lets even the first point move. */
+  /* The points take the room the tags and headline leave; DailyBrief
+     (fitTile) picks how many show and how many lines each gets. */
   .bento-fit .tile-points {
     flex: 1 1 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    flex-wrap: wrap;
-    align-content: flex-start;
     row-gap: 0.375rem;
     overflow: hidden;
   }
-  .bento-fit .tile-points::before {
-    content: "";
-    width: 100%;
-    height: 0;
-    margin-bottom: -0.375rem;
-  }
   .bento-fit .tile-points > li {
-    width: 100%;
     margin: 0;
   }
 }
@@ -279,18 +262,15 @@ mark {
   }
 }
 
-/* Which points Today's Brief shows (DailyBrief renders enough for both
-   layouts): where it scrolls, more for more relevant topics; where it
-   fills the screen, up to its tile's limit, as many as fit. */
+/* Which points Today's Brief shows (DailyBrief renders them all): where it
+   scrolls, more for more relevant topics; where it fills the screen, as
+   many as fit (DailyBrief fitTile). */
 .point-beyond-flow {
   display: none;
 }
 @media (min-width: 1024px) and (min-height: 640px) {
   .bento-fit .point-beyond-flow {
     display: flex;
-  }
-  .bento-fit .point-beyond-fit {
-    display: none;
   }
 }
 /* Short windows (a 1366x768 laptop): the intro and the color key go, so

@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router";
 import { AlertCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { Calendar } from "./ui/calendar";
 import {
-  Spinner, StateBox, SourceBadge, AiBanner, SectionLabel, getTopicIcon, Region, PAGE_WIDTH,
+  Spinner, StateBox, SourceBadge, AiBanner, SectionLabel, getTopicIcon, Region, PAGE_WIDTH, PAGE_INTRO_CLASS, PAGE_TITLE_STYLE,
 } from "./shared";
 import { DailyBrief, DailySummary } from "./DailyBrief";
 import { GenreWeights, TopicTags, topicTags } from "./topicTags";
@@ -337,16 +337,11 @@ export function ArchivePage() {
         {/* Page header */}
         <div className="mb-8 pb-6 border-b border-border">
           <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: "2.25rem",
-              lineHeight: 1.15,
-            }}
+            style={PAGE_TITLE_STYLE}
           >
             Archive
           </h1>
-          <p className="mt-2 text-lg text-muted-foreground">
+          <p className={PAGE_INTRO_CLASS}>
             Pick a day to read its Daily Brief and every topic covered that day.
           </p>
         </div>

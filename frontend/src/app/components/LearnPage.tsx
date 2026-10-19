@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { Flame, AlertCircle } from "lucide-react";
-import { Spinner, StateBox, PageContainer, SectionLabel, siteToday } from "./shared";
+import { Spinner, StateBox, PageContainer, SectionLabel, siteToday, PAGE_INTRO_CLASS, PAGE_TITLE_STYLE } from "./shared";
 import { errorMessage, fetchJson } from "../api";
 import { safeUrl } from "../sanitize";
 
@@ -435,16 +435,11 @@ export function LearnPage() {
       <div className="flex items-start justify-between gap-4 mb-8 pb-6 border-b border-border flex-wrap">
         <div>
           <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 800,
-              fontSize: "2.25rem",
-              lineHeight: 1.15,
-            }}
+            style={PAGE_TITLE_STYLE}
           >
             Learn Political Literacy
           </h1>
-          <p className="mt-2 text-lg text-muted-foreground">Grounded in today's headlines.</p>
+          <p className={PAGE_INTRO_CLASS}>Grounded in today's headlines.</p>
         </div>
         <span
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border text-base font-semibold"
